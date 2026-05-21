@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/nerfthisdev/db-app/internal/reader"
@@ -13,35 +14,67 @@ import (
 
 var (
 	dsnPg1 = "postgres://postgres:secret123@127.0.0.1:5432/mydb"
-	dsnPg2 = ""
+	dsnPg2 = "postgres://postgres:secret123@127.0.0.1:5433/mydb"
 )
 
+var ErrorInvalidArgs = errors.New("error: not enough arguments")
+
 func main() {
-	var seedFlag bool
-	flag.BoolVar(&seedFlag, "seed", false, "-seed")
+	var pgFlag int
+	var conn *pgx.Conn
+	var err error
+	flag.IntVar(&pgFlag, "pg", 1, "-pg")
 	flag.Parse()
+
+	args := flag.Args()
 
 	logger := slog.Default()
 
 	ctx := context.Background()
 
-	connPg1, err := pgx.Connect(ctx, dsnPg1)
+	if pgFlag == 1 {
+		conn, err = pgx.Connect(ctx, dsnPg1)
+	} else {
+		conn, err = pgx.Connect(ctx, dsnPg2)
+	}
+
 	if err != nil {
 		logger.Error("error connecting to db", "error", err)
 		return
 	}
-	defer connPg1.Close(ctx)
+	defer conn.Close(ctx)
 
-	if seedFlag {
-		seeder := seed.NewSeeder(connPg1)
-		if err := seeder.Seed(ctx); err != nil {
+	if args[0] == "seed" {
+		if len(args) != 2 {
+			logger.Error("not enough arguments", "error", ErrorInvalidArgs)
+			return
+		}
+
+		n, err := strconv.Atoi(args[1])
+		if err != nil {
+			logger.Error("invalid argument", "error", ErrorInvalidArgs)
+			return
+		}
+
+		seeder := seed.NewSeeder(conn)
+		if err := seeder.Seed(ctx, n); err != nil {
 			logger.Error("error seeding", "error", err)
 		}
+		logger.Info("seeded users and orders", "n", n)
 	}
 
-	reader := reader.NewReader(connPg1)
+	if args[0] == "read" {
+		if len(args) != 2 {
+			logger.Error("not enough arguments", "error", ErrorInvalidArgs)
+			return
+		}
+		reader := reader.NewReader(conn)
 
-	users := reader.ReadUsers(ctx, 10)
+		users, err := reader.ReadUsers(ctx, 10)
+		_ = users
+		if err != nil {
+			logger.Error("error reading", "error", err)
+		}
 
-	fmt.Printf("%v", users)
+	}
 }

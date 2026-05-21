@@ -1,4 +1,4 @@
-package seed
+package repository
 
 import (
 	"context"
@@ -7,42 +7,49 @@ import (
 	"github.com/nerfthisdev/db-app/internal/model"
 )
 
-//
-// type User struct {
-// 	ID       uuid.UUID
-// 	Name     string
-// 	Email    string
-// 	Address  string
-// 	Password string
-// }
-//
-// type Order struct {
-// 	ID     int
-// 	UserID uuid.UUID
-// 	SKU    int
-// 	Price  float64
-// }
-
-type Seeder struct {
+type Repository struct {
 	db *pgx.Conn
 }
 
-func NewSeeder(db *pgx.Conn) *Seeder {
-	return &Seeder{db: db}
+func NewRepository(db *pgx.Conn) *Repository {
+	return &Repository{db: db}
 }
 
-func (s *Seeder) Seed(ctx context.Context) error {
+func (r *Repository) ReadUsers(ctx context.Context, n int) ([]model.User, error) {
+	queryString := `
+	SELECT 
+	    user_id as id,
+		name,
+		email,
+		address,
+		password FROM users
+	`
+
+	rows, err := r.db.Query(ctx, queryString)
+	if err != nil {
+		return []model.User{}, err
+	}
+
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[model.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (r *Repository) Seed(ctx context.Context) error {
 	n := 50
 	users := model.GenerateUsers(n)
 
 	orders := model.GenerateOrders(users)
 
-	err := s.seedUsers(ctx, users)
+	err := r.seedUsers(ctx, users)
 	if err != nil {
 		return err
 	}
 
-	err = s.seedOrders(ctx, orders)
+	err = r.seedOrders(ctx, orders)
 	if err != nil {
 		return err
 	}
@@ -50,7 +57,7 @@ func (s *Seeder) Seed(ctx context.Context) error {
 	return nil
 }
 
-func (s *Seeder) seedUsers(ctx context.Context, users []model.User) error {
+func (r *Repository) seedUsers(ctx context.Context, users []model.User) error {
 	queryString := `INSERT
 	INTO users (user_id, name, email, address, password)
 	VALUES ($1, $2, $3, $4, $5)`
@@ -68,7 +75,7 @@ func (s *Seeder) seedUsers(ctx context.Context, users []model.User) error {
 		)
 	}
 
-	br := s.db.SendBatch(ctx, batch)
+	br := r.db.SendBatch(ctx, batch)
 	defer br.Close()
 
 	for range users {
@@ -79,7 +86,7 @@ func (s *Seeder) seedUsers(ctx context.Context, users []model.User) error {
 	return nil
 }
 
-func (s *Seeder) seedOrders(ctx context.Context, orders []model.Order) error {
+func (r *Repository) seedOrders(ctx context.Context, orders []model.Order) error {
 	queryString := `INSERT
 	INTO orders (user_id, sku, price)
 	VALUES ($1, $2, $3)`
@@ -95,7 +102,7 @@ func (s *Seeder) seedOrders(ctx context.Context, orders []model.Order) error {
 		)
 	}
 
-	br := s.db.SendBatch(ctx, batch)
+	br := r.db.SendBatch(ctx, batch)
 	defer br.Close()
 
 	for range orders {
