@@ -16,6 +16,9 @@ func main() {
 	logger := slog.Default()
 
 	connPg1, err := pgx.Connect(context.Background(), dsnPg1)
+	
+	
+
 	if err != nil {
 		logger.Error("error connecting to db", "error", err)
 	}
