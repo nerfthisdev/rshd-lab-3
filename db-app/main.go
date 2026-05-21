@@ -8,8 +8,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/nerfthisdev/db-app/internal/reader"
-	"github.com/nerfthisdev/db-app/internal/seed"
+	"github.com/nerfthisdev/db-app/internal/repository"
 )
 
 var (
@@ -44,6 +43,8 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
+	repo := repository.NewRepository(conn)
+
 	if args[0] == "seed" {
 		if len(args) != 2 {
 			logger.Error("not enough arguments", "error", ErrorInvalidArgs)
@@ -56,8 +57,7 @@ func main() {
 			return
 		}
 
-		seeder := seed.NewSeeder(conn)
-		if err := seeder.Seed(ctx, n); err != nil {
+		if err := repo.Seed(ctx, n); err != nil {
 			logger.Error("error seeding", "error", err)
 		}
 		logger.Info("seeded users and orders", "n", n)
@@ -68,9 +68,8 @@ func main() {
 			logger.Error("not enough arguments", "error", ErrorInvalidArgs)
 			return
 		}
-		reader := reader.NewReader(conn)
 
-		users, err := reader.ReadUsers(ctx, 10)
+		users, err := repo.ReadUsers(ctx, 10)
 		_ = users
 		if err != nil {
 			logger.Error("error reading", "error", err)

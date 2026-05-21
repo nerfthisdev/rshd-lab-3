@@ -38,8 +38,7 @@ func (r *Repository) ReadUsers(ctx context.Context, n int) ([]model.User, error)
 	return users, nil
 }
 
-func (r *Repository) Seed(ctx context.Context) error {
-	n := 50
+func (r *Repository) Seed(ctx context.Context, n int) error {
 	users := model.GenerateUsers(n)
 
 	orders := model.GenerateOrders(users)
