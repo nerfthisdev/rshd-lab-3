@@ -23,6 +23,16 @@ type Order struct {
 	Price  float64
 }
 
+func (u *User) String() string {
+	return fmt.Sprintf("ID: %s Name: %s, Email: %s, Address: %s, Password: %s",
+		u.ID,
+		u.Name,
+		u.Email,
+		u.Address,
+		u.Password,
+	)
+}
+
 func GenerateUsers(n int) []User {
 	userS := make([]User, 0, n)
 

@@ -22,10 +22,10 @@ func (r *Repository) ReadUsers(ctx context.Context, n int) ([]model.User, error)
 		name,
 		email,
 		address,
-		password FROM users
+		password FROM users LIMIT ($1)
 	`
 
-	rows, err := r.db.Query(ctx, queryString)
+	rows, err := r.db.Query(ctx, queryString, n)
 	if err != nil {
 		return []model.User{}, err
 	}

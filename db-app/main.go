@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"strconv"
 
@@ -69,8 +70,18 @@ func main() {
 			return
 		}
 
-		users, err := repo.ReadUsers(ctx, 10)
-		_ = users
+		n, err := strconv.Atoi(args[1])
+		if err != nil {
+			logger.Error("invalid argument", "error", ErrorInvalidArgs)
+			return
+		}
+
+		users, err := repo.ReadUsers(ctx, n)
+
+		for _, u := range users {
+			fmt.Println(u.String())
+		}
+
 		if err != nil {
 			logger.Error("error reading", "error", err)
 		}
