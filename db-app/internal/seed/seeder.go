@@ -27,6 +27,10 @@ type Seeder struct {
 	db *pgx.Conn
 }
 
+func NewSeeder(db *pgx.Conn) *Seeder {
+	return &Seeder{db: db}
+}
+
 func (s *Seeder) Seed(ctx context.Context) error {
 	n := 50
 	users := model.GenerateUsers(n)
@@ -47,8 +51,8 @@ func (s *Seeder) Seed(ctx context.Context) error {
 }
 
 func (s *Seeder) seedUsers(ctx context.Context, users []model.User) error {
-	queryString := `INSERT 
-	INTO users (user_id, name, email, address, password) 
+	queryString := `INSERT
+	INTO users (user_id, name, email, address, password)
 	VALUES ($1, $2, $3, $4, $5)`
 
 	batch := &pgx.Batch{}
@@ -67,7 +71,12 @@ func (s *Seeder) seedUsers(ctx context.Context, users []model.User) error {
 	br := s.db.SendBatch(ctx, batch)
 	defer br.Close()
 
-	return br.Close()
+	for range users {
+		if _, err := br.Exec(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Seeder) seedOrders(ctx context.Context, orders []model.Order) error {
@@ -89,5 +98,10 @@ func (s *Seeder) seedOrders(ctx context.Context, orders []model.Order) error {
 	br := s.db.SendBatch(ctx, batch)
 	defer br.Close()
 
-	return br.Close()
+	for range orders {
+		if _, err := br.Exec(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

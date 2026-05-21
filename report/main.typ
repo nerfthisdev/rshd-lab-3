@@ -191,4 +191,3 @@ SELECT * FROM repl_test;
 ----+-------------------
   1 | hello from master
 ```
-
