@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./pgdata/pg1:/var/lib/postgresql/data
+      - ./pgdata/pg1-mnt:/var/lib/postgresql/data
     networks:
       - pg-net
 
